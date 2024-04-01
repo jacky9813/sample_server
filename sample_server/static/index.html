@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Example Web Server with Socket.IO</title>
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <div id="input">
+            <form action="">
+                <table>
+                    <tr>
+                        <td>Event</td>
+                        <td>
+                            <select name="event_id" id="event_id">
+                                <option value="hello">hello</option>
+                                <option value="leave">leave</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Event Data</td>
+                        <td><textarea name="event_data" id="event_data" cols="30" rows="10"></textarea></td>
+                    </tr>
+                </table>
+                <button id="send">Send</button>
+            </form>
+        </div>
+        <div id="connection_status">Disconnected</div>
+        <div class="output">
+            <table id="output">
+                <thead>
+                    <tr>
+                        <td></td>
+                        <td>Timestamp</td>
+                        <td>Event Name</td>
+                        <td>Message</td>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <script>
+            var socket = io("/socket");
+
+            const FROM = {
+                "server": "\u2193",
+                "client": "\u2191"
+            }
+
+            function TranmitRecord(
+                from = "server", // "client"
+                timestamp = null,
+                event_name = "message",
+                data = null
+            ){
+                timestamp = (timestamp == null || timestamp == undefined) ? new Date() : timestamp;
+                let row = document.createElement("tr");
+                let fields = [
+                    FROM.hasOwnProperty(from) ? FROM[from] : from,
+                    timestamp.toISOString(),
+                    event_name,
+                    data || "<NO DATA>"
+                ];
+                fields.forEach((d) => {
+                    let cell = document.createElement("td");
+                    cell.innerText = d;
+                    row.appendChild(cell);
+                })
+                document.querySelector("table#output tbody").prepend(
+                    row
+                );
+                return row;
+            }
+
+            socket.on("connect", () => {
+                document.querySelector("div#connection_status").innerText = "Connected";
+            });
+
+            socket.onAny((event, data) => {
+                let receiveTime = new Date();
+                let row = TranmitRecord(
+                    "server",
+                    receiveTime,
+                    event,
+                    data
+                );
+            });
+
+            socket.on("disconnect", (reason) => {
+                let receiveTime = new Date();
+                let row = TranmitRecord(
+                    "X",
+                    receiveTime,
+                    "<CONNECTION CLOSE>",
+                    reason
+                );
+                document.querySelector("div#connection_status").innerText = "Disconnected";
+            });
+
+            document.querySelector("button#send").addEventListener("click", (e)=>{
+                let event_id = document.querySelector("select#event_id").value;
+                let event_data = document.querySelector("textarea#event_data").value;
+
+                if (!socket.connected){
+                    socket.connect();
+                }
+
+                socket.emit(event_id, event_data);
+                let row = TranmitRecord(
+                    "client",
+                    null,
+                    event_id,
+                    event_data
+                );
+                e.preventDefault();
+            });
+        </script>
+    </body>
+</html>

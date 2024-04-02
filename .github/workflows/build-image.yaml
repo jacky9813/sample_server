@@ -31,12 +31,12 @@ jobs:
           push: true
           tags: ghcr.io/jacky9813/sample_server:${{ github.sha }}
       - name: Run Trivy
-        uses: aquasecurity/trivy-action
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: ghcr.io/jacky9813/sample_server:${{ github.sha }}
           format: sarif
           output: trivy-result.sarif
       - name: Upload trivy scan result to GitHub
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-result.sarif
